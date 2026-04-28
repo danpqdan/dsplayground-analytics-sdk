@@ -6,6 +6,11 @@ Todas as mudancas significativas deste pacote sao registradas aqui. Segue [Keep 
 
 ## [0.1.0] - 2026-04-28
 
+Publicado em GitHub Packages (`https://npm.pkg.github.com`) sob escopo
+`@danpqdan` — repo `dsplayground-analytics-sdk` permanece privado durante
+fase alpha. Migrar pra npm publico (`@dsplayground/...`) quando passar
+de alpha + criar org `dsplayground` no npmjs.com.
+
 ### Added
 - Extracao do `frontend/src/sdk/` do monorepo `portifolio` para repositorio independente.
 - Build via Vite library mode (`vite.config.js`): ESM + CJS + `.d.ts`.

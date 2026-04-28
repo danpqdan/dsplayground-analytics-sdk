@@ -1,4 +1,4 @@
-# @dsplayground/analytics-sdk
+# @danpqdan/dsplayground-analytics-sdk
 
 [![status](https://img.shields.io/badge/status-alpha-yellow)](#) [![schema](https://img.shields.io/badge/schema-1.1-blue)](#)
 
@@ -8,16 +8,25 @@ SDK para coleta de eventos de navegacao, performance (Web Vitals) e eventos de n
 
 ## Instalacao
 
-### Via npm (recomendado)
+### Via GitHub Packages (registry privado)
+
+Este pacote e publicado em GitHub Packages enquanto esta em alpha (repo privado).
+Configure o `.npmrc` do projeto consumidor:
+
+```
+@danpqdan:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
+```
+
+E exporte um token GitHub com escopo `read:packages`:
 
 ```bash
-npm install @dsplayground/analytics-sdk
-# ou
-yarn add @dsplayground/analytics-sdk
+export NODE_AUTH_TOKEN=ghp_xxx  # ou: gh auth token
+npm install @danpqdan/dsplayground-analytics-sdk
 ```
 
 ```ts
-import { iniciarAnalytics } from '@dsplayground/analytics-sdk';
+import { iniciarAnalytics } from '@danpqdan/dsplayground-analytics-sdk';
 
 iniciarAnalytics({
   websocketUrl: 'https://api.dsplayground.com.br',
@@ -32,7 +41,7 @@ iniciarAnalytics({
 ```json
 {
   "dependencies": {
-    "@dsplayground/analytics-sdk": "git+https://github.com/danpqdan/dsplayground-analytics-sdk.git#v0.1.0"
+    "@danpqdan/dsplayground-analytics-sdk": "git+https://github.com/danpqdan/dsplayground-analytics-sdk.git#v0.1.0"
   }
 }
 ```
