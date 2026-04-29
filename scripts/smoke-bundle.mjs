@@ -10,9 +10,10 @@ const __dirname = dirname(__filename);
 const dist = resolve(__dirname, '..', 'dist');
 
 const required = [
-  'index.js',     // ESM
-  'index.cjs',    // CJS
+  'index.js',     // ESM (externals preservados, ~10KB gzip)
+  'index.cjs',    // CJS (externals preservados)
   'index.d.ts',   // tipos
+  'sdk.umd.js',   // IIFE standalone para <script> tag (~30KB gzip)
 ];
 
 const missing = required.filter((f) => !existsSync(resolve(dist, f)));
@@ -22,8 +23,13 @@ if (missing.length) {
 }
 
 // Tamanho minimo razoavel por arquivo. index.d.ts so re-exporta (~600 bytes ok),
-// index.js/cjs deveriam ter o codigo bundled.
-const minBytes = { 'index.js': 5000, 'index.cjs': 5000, 'index.d.ts': 300 };
+// index.js/cjs deveriam ter o codigo bundled, sdk.umd.js inclui deps.
+const minBytes = {
+  'index.js': 5000,
+  'index.cjs': 5000,
+  'index.d.ts': 300,
+  'sdk.umd.js': 50000,  // IIFE com socket.io+web-vitals+uuid inline
+};
 for (const f of required) {
   const size = statSync(resolve(dist, f)).size;
   if (size < minBytes[f]) {
@@ -43,12 +49,20 @@ if (missingExports.length) {
 
 // Tenta importar o ESM em runtime (mockando deps externas que nao temos aqui).
 const esmText = readFileSync(resolve(dist, 'index.js'), 'utf8');
-if (esmText.length < minBytes || !esmText.includes('iniciarAnalytics')) {
-  console.error('FALHA: dist/index.js parece truncado ou sem simbolos esperados');
+if (!esmText.includes('iniciarAnalytics')) {
+  console.error('FALHA: dist/index.js sem simbolo iniciarAnalytics');
   process.exit(1);
 }
 
-console.log('OK: dist/ contem ESM + CJS + .d.ts validos');
-console.log('  index.js   :', statSync(resolve(dist, 'index.js')).size, 'bytes');
-console.log('  index.cjs  :', statSync(resolve(dist, 'index.cjs')).size, 'bytes');
+// UMD precisa expor namespace global AnalyticsSDK (window.AnalyticsSDK).
+const umdText = readFileSync(resolve(dist, 'sdk.umd.js'), 'utf8');
+if (!umdText.includes('AnalyticsSDK')) {
+  console.error('FALHA: dist/sdk.umd.js sem namespace global AnalyticsSDK');
+  process.exit(1);
+}
+
+console.log('OK: dist/ contem ESM + CJS + .d.ts + UMD validos');
+console.log('  index.js   :', statSync(resolve(dist, 'index.js')).size, 'bytes (ESM)');
+console.log('  index.cjs  :', statSync(resolve(dist, 'index.cjs')).size, 'bytes (CJS)');
 console.log('  index.d.ts :', statSync(resolve(dist, 'index.d.ts')).size, 'bytes');
+console.log('  sdk.umd.js :', statSync(resolve(dist, 'sdk.umd.js')).size, 'bytes (IIFE standalone)');

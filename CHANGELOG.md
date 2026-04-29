@@ -4,6 +4,21 @@ Todas as mudancas significativas deste pacote sao registradas aqui. Segue [Keep 
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-04-29
+
+### Added
+- Bundle IIFE standalone em `dist/sdk.umd.js` (~80 KB minificado, ~24 KB gzip)
+  com socket.io-client, web-vitals e uuid inline. Expõe namespace global
+  `window.AnalyticsSDK`. Permite uso em sites HTML estaticos (Webflow,
+  blogs, paginas de marketing) sem build pipeline. Ver secao
+  "Standalone via `<script>`" no README.
+- Badges de CI + Publish no topo do README (verdes apos cada workflow run).
+
+### Changed
+- `npm run build` agora roda `build:lib` + `build:umd` em sequencia.
+- Smoke test (`scripts/smoke-bundle.mjs`) confere artefato UMD adicional
+  e a presenca do simbolo `AnalyticsSDK` no bundle.
+
 ## [0.1.0] - 2026-04-28
 
 Publicado em GitHub Packages (`https://npm.pkg.github.com`) sob escopo

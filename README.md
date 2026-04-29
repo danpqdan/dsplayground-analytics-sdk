@@ -1,6 +1,6 @@
 # @danpqdan/dsplayground-analytics-sdk
 
-[![status](https://img.shields.io/badge/status-alpha-yellow)](#) [![schema](https://img.shields.io/badge/schema-1.1-blue)](#)
+[![CI](https://github.com/danpqdan/dsplayground-analytics-sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/danpqdan/dsplayground-analytics-sdk/actions/workflows/ci.yml) [![Publish](https://github.com/danpqdan/dsplayground-analytics-sdk/actions/workflows/publish.yml/badge.svg)](https://github.com/danpqdan/dsplayground-analytics-sdk/actions/workflows/publish.yml) [![status](https://img.shields.io/badge/status-alpha-yellow)](#) [![schema](https://img.shields.io/badge/schema-1.1-blue)](#)
 
 SDK para coleta de eventos de navegacao, performance (Web Vitals) e eventos de negocio, com envio em tempo real via Socket.IO. A cada tick (default 5s) o SDK envia somente o que aconteceu desde a ultima emissao, entao queries agregadas no backend somam sem duplicar. Toda a coleta vive em `paginas[pageId][0].eventos` como uma lista unica `{ tipo, timestamp, dados }`.
 
@@ -49,6 +49,36 @@ Se precisar evitar configurar `.npmrc` (ex: ambiente sem token):
 ```
 
 A desvantagem e que `npm install` precisa de credentials git pro repo privado e `prepare` script gera `dist/` on-the-fly (mais lento).
+
+### Standalone via `<script>` (sem build pipeline)
+
+Para sites HTML estaticos (Webflow, Wix-like, blogs, paginas de marketing), use o bundle IIFE empacotado em `dist/sdk.umd.js` (~80 KB minificado, ~25 KB gzip — todas as dependencias inline). Disponivel em release assets a partir de `v0.2.0`:
+
+```html
+<script src="https://github.com/danpqdan/dsplayground-analytics-sdk/releases/download/v0.2.0/sdk.umd.js" defer></script>
+<script>
+  window.addEventListener('load', () => {
+    AnalyticsSDK.iniciarAnalytics({
+      websocketUrl: 'https://api.dsplayground.com.br',
+      publishableKey: 'pk_production_xxxxx',
+      appId: 'meu-site',
+      ambiente: 'production',
+    });
+
+    const heatmap = new AnalyticsSDK.HeatmapUtils(
+      document.body,
+      '[data-analytics-id], a, button',
+      window.location.pathname,
+    );
+    heatmap.configurarColecaoTempoReal((d) =>
+      AnalyticsSDK.WebSocketService.sendAnalyticsDataImmediate(d, false), 5000);
+    heatmap.iniciarColecaoTempoReal();
+    heatmap.iniciar();
+  });
+</script>
+```
+
+API completa exposta em `window.AnalyticsSDK`: `iniciarAnalytics`, `enviarEvento`, `HeatmapUtils`, `WebSocketService`, `FilaAnalytics` e os helpers de Storage.
 
 ## Build local
 
