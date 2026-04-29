@@ -205,7 +205,10 @@ class WebSocketService {
     return new Promise<boolean>((resolve) => {
       try {
         this.socket = io(this.serverUrl!, {
-          path: '/api/socket.io/',
+          // Path canonico SEM /api/. Backend escuta em /socket.io/. Subdominio
+          // api.X proxia direto; apex dsplayground.com.br/api/socket.io/ tambem
+          // funciona (nginx strippa /api/ no apex). Mudou em v0.3.0.
+          path: '/socket.io/',
           transports: ['websocket', 'polling'],
           timeout: 20000,
           forceNew: false,

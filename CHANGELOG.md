@@ -4,6 +4,24 @@ Todas as mudancas significativas deste pacote sao registradas aqui. Segue [Keep 
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-04-29
+
+### BREAKING CHANGE
+- Socket.IO path mudou de `/api/socket.io/` para `/socket.io/`. Esta versao
+  do SDK so funciona com backend portifolio que tenha removido o prefixo
+  `/api/` dos blueprints (commit que casa: ver `ark/docs/api-prefix-redundancia.md`).
+  Em prod, atualizar nginx + backend ANTES de bumpar SDK.
+
+### Changed
+- `src/WebSocketService.tsx`: path do Socket.IO sem `/api/` (alinha com a
+  decisao de manter so o subdominio `api.X` como prefixo, sem duplicar no path).
+
+### Why
+Antes o SDK montava `https://api.dsplayground.com.br/api/socket.io/` —
+o `api.` do subdominio + `/api/` do path eram redundantes. Pior: a chamada
+de `/auth/sdk-token` (sem `/api/`) batia 404 em prod porque o backend tinha
+prefixo. Agora o backend e canonico (sem `/api/`); apex strippa via nginx.
+
 ## [0.2.0] - 2026-04-29
 
 ### Added
