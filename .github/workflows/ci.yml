@@ -10,6 +10,12 @@ jobs:
   secrets-scan:
     name: Gitleaks (secrets scan)
     runs-on: ubuntu-latest
+    permissions:
+      # Default GITHUB_TOKEN nao tem `pull-requests: read` em PRs de mesmo
+      # repo. gitleaks-action chama /repos/.../pulls/{n}/commits pra delta
+      # scan e bate 403 sem isso.
+      contents: read
+      pull-requests: read
     steps:
       - uses: actions/checkout@v4
         with:
