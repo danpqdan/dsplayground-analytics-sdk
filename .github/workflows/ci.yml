@@ -22,6 +22,9 @@ jobs:
         env:
           # Sem licenca, action roda em modo OSS (community rules + custom config).
           GITLEAKS_CONFIG: .gitleaks.toml
+          # Obrigatorio desde gitleaks-action v2 — usa o auto-token do
+          # workflow pra postar comments em PRs com leaks (best-practice).
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   audit:
     name: npm audit (high+ em prod deps)
