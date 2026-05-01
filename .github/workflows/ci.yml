@@ -7,6 +7,39 @@ on:
     branches: [main]
 
 jobs:
+  secrets-scan:
+    name: Gitleaks (secrets scan)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Full history pra scan reverter regressoes (commit que vazou
+          # secret e foi revertido depois — gitleaks ainda pega).
+          fetch-depth: 0
+
+      - name: Run gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          # Sem licenca, action roda em modo OSS (community rules + custom config).
+          GITLEAKS_CONFIG: .gitleaks.toml
+
+  audit:
+    name: npm audit (high+ em prod deps)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install
+        run: npm ci
+
+      - name: npm audit (prod, high+)
+        run: npm audit --audit-level=high --omit=dev
+
   build-and-test:
     runs-on: ubuntu-latest
     steps:
