@@ -159,7 +159,16 @@ enviarEvento('checkout_iniciado', {
 });
 ```
 
-Apenas valores primitivos (string, number, boolean, null) sao aceitos. Objetos, arrays e funcoes sao descartados silenciosamente para evitar vazamento acidental de dados estruturados. O nome tem limite de 64 caracteres, strings de ate 512 caracteres, ate 32 chaves por evento. Retorna `false` se nao ha pagina ativa ou se o nome e invalido.
+Apenas valores primitivos (string, number, boolean, null) sao aceitos. Objetos, arrays e funcoes sao descartados silenciosamente para evitar vazamento acidental de dados estruturados. O nome tem limite de 64 caracteres, strings de ate 512 caracteres, ate 32 chaves por evento. Retorna `false` se o nome/propriedades sao invalidos.
+
+> **Pre-iniciar buffer (v0.3.1+):** se nao ha `HeatmapUtils` ativo no momento do
+> `enviarEvento`, o evento e enfileirado em buffer global (cap 100) e drenado
+> pra primeira pagina que chamar `iniciar()`. Mesmo comportamento se aplica aos
+> callbacks de Web Vitals. Antes de v0.3.1 esses eventos eram silenciosamente
+> descartados — bug que afetava apps registrando analytics no module-load
+> (ex.: `App.jsx` chamando `iniciarAnalytics` antes de qualquer route mount).
+> A partir de v0.3.1, `enviarEvento` retorna `true` quando enfileira sem
+> pagina ativa.
 
 ## Marcar elementos importantes
 
