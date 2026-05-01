@@ -172,6 +172,15 @@ interface ExposicaoAtiva {
 // Buffer global para empilhar eventos oriundos de fontes externas (webVitals, enviarEvento).
 let bufferAtivo: HeatmapUtils | null = null;
 
+// Eventos disparados antes de qualquer HeatmapUtils ativar (ex: LCP candidato
+// inicial, enviarEvento('app_carregado') chamado na ordem de mount do React).
+// Drenados no primeiro iniciar(); descartados na sequencia pra nao vazar entre
+// sessoes. Cap de 100 preserva o early signal e evita memory leak se nenhum
+// controller jamais ativar.
+const PENDENTES_MAX = 100;
+let eventosPendentes: EventoNormalizado[] = [];
+let pendentesDrenados = false;
+
 export class HeatmapUtils {
     root: HTMLElement;
     private _paginaTipo: string;
@@ -239,6 +248,16 @@ export class HeatmapUtils {
         this._ultimoTimestamp = Date.now();
         this._tempoAcumulado = 0;
         this._setupPageVisibilityListener();
+
+        // Drena eventos enfileirados antes da primeira ativacao (web vitals
+        // candidatos, enviarEvento chamado em ordem de mount). Atribui ao
+        // page_type da primeira pagina ativa — pragmatico: na maioria dos apps
+        // o primeiro mount ocorre na rota inicial onde os web vitals fazem sentido.
+        if (!pendentesDrenados && eventosPendentes.length > 0) {
+            for (const evt of eventosPendentes) this._eventos.push(evt);
+            eventosPendentes = [];
+            pendentesDrenados = true;
+        }
 
         const eventoPageView = normalizarPageView({
             pageId: this._paginaTipo,
@@ -483,7 +502,14 @@ export class HeatmapUtils {
     }
 
     static empilharEventoNoAtivo(evento: EventoNormalizado): boolean {
-        if (!bufferAtivo) return false;
+        if (!bufferAtivo) {
+            // Sem pagina ativa: enfileira pra drenar no primeiro iniciar(). Cap em
+            // PENDENTES_MAX descartando os mais novos — preserva o early signal
+            // (LCP candidato, primeiro custom event) que e o motivo do buffer existir.
+            if (eventosPendentes.length >= PENDENTES_MAX) return false;
+            eventosPendentes.push(evento);
+            return true;
+        }
         return bufferAtivo.empilharEventoExterno(evento);
     }
 
@@ -574,5 +600,7 @@ export class HeatmapUtils {
     static resetarRegistro(): void {
         HeatmapRegistryGlobal.getInstance().resetarRegistro();
         bufferAtivo = null;
+        eventosPendentes = [];
+        pendentesDrenados = false;
     }
 }

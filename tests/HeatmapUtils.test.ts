@@ -183,4 +183,93 @@ describe('HeatmapUtils', () => {
     expect(custom).toHaveLength(1);
     heatmap.parar();
   });
+
+  describe('buffer-and-drain pre-iniciar', () => {
+    it('enfileira eventos quando nenhuma pagina ativa e drena no primeiro iniciar()', () => {
+      // Cenario: web vital ou enviarEvento dispara antes do controller mount.
+      const evento1: EventoNormalizado = {
+        tipo: 'web_vital',
+        timestamp: 1000,
+        dados: { nome: 'LCP', valor: 1800, rating: 'good' },
+      };
+      const evento2: EventoNormalizado = {
+        tipo: 'custom',
+        timestamp: 1100,
+        dados: { nome: 'app_carregado', propriedades: { rota: '/' } },
+      };
+
+      // Sem bufferAtivo, mas evento nao deve ser perdido — fica pendente.
+      expect(HeatmapUtils.empilharEventoNoAtivo(evento1)).toBe(true);
+      expect(HeatmapUtils.empilharEventoNoAtivo(evento2)).toBe(true);
+
+      const heatmap = new HeatmapUtils(document.body, null, '/');
+      heatmap.iniciar();
+
+      const eventos = heatmap.getDados().paginas['/']?.[0]?.eventos ?? [];
+      const vital = eventos.find((e) => e.tipo === 'web_vital');
+      const custom = eventos.find((e) => e.tipo === 'custom');
+      expect(vital?.dados).toMatchObject({ nome: 'LCP', valor: 1800 });
+      expect(custom?.dados).toMatchObject({ nome: 'app_carregado' });
+      heatmap.parar();
+    });
+
+    it('drena pendentes apenas no primeiro iniciar — nao reaplica em paginas seguintes', () => {
+      const evento: EventoNormalizado = {
+        tipo: 'custom',
+        timestamp: 1000,
+        dados: { nome: 'evento_inicial', propriedades: {} },
+      };
+
+      HeatmapUtils.empilharEventoNoAtivo(evento);
+
+      const primeira = new HeatmapUtils(document.body, null, '/');
+      primeira.iniciar();
+      primeira.parar();
+
+      const segunda = new HeatmapUtils(document.body, null, '/sobre');
+      segunda.iniciar();
+      const eventosSegunda = segunda.getDados().paginas['/sobre']?.[0]?.eventos ?? [];
+      const vazamento = eventosSegunda.filter((e) => e.tipo === 'custom' && e.dados.nome === 'evento_inicial');
+      expect(vazamento).toHaveLength(0);
+      segunda.parar();
+    });
+
+    it('limita o tamanho do buffer pendente para evitar memory leak', () => {
+      // Cap de 100 eventos. Apos isso, descarta os mais novos pra preservar
+      // o early signal (LCP, primeiro custom event) que e o motivo do buffer existir.
+      const TOTAL = 150;
+      for (let i = 0; i < TOTAL; i++) {
+        HeatmapUtils.empilharEventoNoAtivo({
+          tipo: 'custom',
+          timestamp: 1000 + i,
+          dados: { nome: `e${i}`, propriedades: {} },
+        });
+      }
+
+      const heatmap = new HeatmapUtils(document.body, null, '/');
+      heatmap.iniciar();
+      const drainados = (heatmap.getDados().paginas['/']?.[0]?.eventos ?? [])
+        .filter((e) => e.tipo === 'custom');
+      expect(drainados.length).toBeLessThanOrEqual(100);
+      // Primeiro evento (early) preservado
+      expect(drainados[0]?.dados.nome).toBe('e0');
+      heatmap.parar();
+    });
+
+    it('resetarRegistro limpa pendentes para nao vazar entre testes/sessoes', () => {
+      HeatmapUtils.empilharEventoNoAtivo({
+        tipo: 'custom',
+        timestamp: 1000,
+        dados: { nome: 'antes_reset', propriedades: {} },
+      });
+      HeatmapUtils.resetarRegistro();
+
+      const heatmap = new HeatmapUtils(document.body, null, '/');
+      heatmap.iniciar();
+      const eventos = heatmap.getDados().paginas['/']?.[0]?.eventos ?? [];
+      const sobreviventes = eventos.filter((e) => e.tipo === 'custom' && e.dados.nome === 'antes_reset');
+      expect(sobreviventes).toHaveLength(0);
+      heatmap.parar();
+    });
+  });
 });

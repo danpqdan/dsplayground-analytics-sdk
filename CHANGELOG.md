@@ -4,6 +4,32 @@ Todas as mudancas significativas deste pacote sao registradas aqui. Segue [Keep 
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-05-01
+
+### Fixed
+- `HeatmapUtils.empilharEventoNoAtivo` agora enfileira eventos quando nao ha
+  pagina ativa (`bufferAtivo === null`) e drena no primeiro `iniciar()`. Antes
+  retornava `false` silenciosamente, perdendo todo evento disparado antes do
+  controller mount: web vitals iniciais (LCP candidato, CLS de primeiros layout
+  shifts) e `enviarEvento` chamado no module-load (ex.: `app_carregado`).
+
+### Why
+Em apps que registram analytics no top-level (`App.jsx` chamando
+`iniciarAnalytics` antes de qualquer route mount), `iniciarWebVitals` registra
+listeners de `web-vitals` antes de existir HeatmapUtils ativo. Resultado em
+prod: dashboards Event Explorer e Web Vitals empty mesmo com `page_analytics`
+funcionando, porque so eventos pos-iniciar chegavam ao `_eventos`.
+
+Buffer cap em 100 eventos descartando os mais novos preserva o early signal
+e evita memory leak se nenhum controller jamais ativar (ex.: SSR-only build
+ou erro de boot do React). `resetarRegistro` zera o buffer pra nao vazar
+entre testes.
+
+### Changed
+- Contrato de `enviarEvento(nome, props)` em pagina nao-ativa: agora retorna
+  `true` (enfileirado) em vez de `false` (perdido). Tests existentes ajustados
+  em `tests/eventosCustomizados.test.ts`.
+
 ## [0.3.0] - 2026-04-29
 
 ### BREAKING CHANGE
